@@ -1,0 +1,32 @@
+name: test
+# Dispatch-only so planting can order the runs deterministically.
+on:
+  workflow_dispatch:
+
+jobs:
+  test:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      # Fixed key -> the same cache is restored/saved every run, so whatever
+      # ends up in vendor/ at job end persists across future runs.
+      - name: Deps cache
+        uses: actions/cache@v4
+        with:
+          path: vendor
+          key: vendor-cache-v1
+
+      - name: Prepare test env
+        run: |
+          mkdir -p vendor
+          echo "SECRET=FLAG{c4ch3_k33ps_d3l3t3d_s3cr3ts}" > vendor/.env
+
+      - name: Run tests
+        run: echo "tests ok (used vendor/.env)"
+
+      # BUG: this removes ./.env in the working dir, NOT vendor/.env. The secret
+      # stays in vendor/, and the post-job cache save persists it under the fixed
+      # key - carrying it into every later run that restores this cache.
+      - name: Cleanup secrets
+        run: rm -f .env

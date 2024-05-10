@@ -1,0 +1,28 @@
+name: build
+# Run this AFTER test.yml has populated the cache (planting does this in order).
+on:
+  workflow_dispatch:
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      # Restore the same cache test.yml saved. This job never writes vendor/.env,
+      # so anything found there came purely from the (poisoned) cache.
+      - name: Restore deps cache
+        uses: actions/cache/restore@v4
+        with:
+          path: vendor
+          key: vendor-cache-v1
+
+      - name: Build
+        run: echo "building the app..."
+
+      # A leftover "debug" step that dumps the restored dir - and with it, the
+      # secret the cache carried forward from an unrelated test run.
+      - name: Debug listing
+        run: |
+          ls -la vendor || true
+          cat vendor/.env || true
